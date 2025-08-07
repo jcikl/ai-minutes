@@ -113,6 +113,7 @@ export const TranscriptCard: React.FC<TranscriptCardProps> = ({
       }));
     }
   }, [segment.content, segment.languageData.primaryLanguage, translateText, isTranslating, realTimeTranslations]);
+
   return (
     <Card
       className={cn(
@@ -135,7 +136,7 @@ export const TranscriptCard: React.FC<TranscriptCardProps> = ({
           segment.languageData.primaryLanguage === "en",
         "bg-gradient-to-r from-transparent via-malay-color/10 to-transparent": 
           segment.languageData.primaryLanguage === "ms",
-      })}
+      })} />
       
       <CardContent className="p-4">
         <div className="speaker-header mb-2 flex items-center justify-between">

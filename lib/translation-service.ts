@@ -138,9 +138,9 @@ class OfflineTranslationEngine implements TranslationEngine {
 
   async translate(request: TranslationRequest): Promise<TranslationResult> {
     const startTime = Date.now();
+    const { text, from, to } = request;
     
     try {
-      const { text, from, to } = request;
       const sourceLanguage = from === 'auto' ? this.detectLanguage(text) : from;
       const dictionaryKey = `${sourceLanguage}-${to}` as keyof typeof this.dictionaries;
       const dictionary = this.dictionaries[dictionaryKey];
@@ -276,7 +276,7 @@ class WebTranslationEngine implements TranslationEngine {
       const translationKey = `${sourceLanguage}-${to}` as keyof typeof mockTranslations;
       const translations = mockTranslations[translationKey];
       
-      let translatedText = translations?.[text as keyof typeof translations] || text;
+      let translatedText: string = translations?.[text as keyof typeof translations] || text;
       let confidence = 0.9;
       
       // 如果没有预设翻译，使用基础翻译逻辑
@@ -433,7 +433,9 @@ export class TranslationManager {
     if (this.cache.size >= this.maxCacheSize) {
       // 删除最旧的缓存项
       const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
     }
     
     this.cache.set(key, result);

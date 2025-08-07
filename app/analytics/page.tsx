@@ -8,7 +8,10 @@ import { BarChart, PieChart } from 'lucide-react'
 
 export default function AnalyticsPage() {
   const [participants, setParticipants] = useState<Participant[]>([])
-  const [languageStats, setLanguageStats] = useState({
+  const [languageStats, setLanguageStats] = useState<{
+    breakdown: Array<{ name: string; value: number; fill: string }>;
+    codeSwitchingPatterns: Array<{ name: string; value: number }>;
+  }>({
     breakdown: [],
     codeSwitchingPatterns: [],
   })

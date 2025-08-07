@@ -33,6 +33,10 @@ export interface TranscriptSegment {
     backgroundNoise: number;
     speakingSpeed: number;
     emotionalTone: string;
+    languageBreakdown?: { [lang: string]: number };
+    codeSwitchingPoints?: any[];
+    isMerged?: boolean;
+    originalSegmentIds?: string[];
   };
 }
 
