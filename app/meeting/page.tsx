@@ -19,6 +19,7 @@ import { TranslationPanel } from "@/components/translation-panel"
 export default function MeetingPage() {
   // 首先定义状态变量
   const [currentLanguage, setCurrentLanguage] = useState<'zh' | 'en' | 'ms'>("en");
+  const [isTestMode, setIsTestMode] = useState(false);
 
   // 使用音频录制钩子
   const {
@@ -52,6 +53,7 @@ export default function MeetingPage() {
     continuous: true,
     interimResults: true,
     language: currentLanguage,
+    testMode: isTestMode,
   });
 
   // 使用语言检测钩子
@@ -277,12 +279,26 @@ export default function MeetingPage() {
             {audioError && (
               <div className="audio-error mt-2 rounded-lg bg-recording-color/10 p-3 text-recording-color">
                 <p className="text-sm font-medium">音频错误: {audioError}</p>
-                <button 
-                  onClick={initializeAudio}
-                  className="mt-1 text-xs underline hover:no-underline"
-                >
-                  重新初始化
-                </button>
+                <div className="mt-2 flex gap-2">
+                  <button 
+                    onClick={() => initializeAudio(false)}
+                    className="text-xs underline hover:no-underline"
+                  >
+                    重新初始化
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsTestMode(true);
+                      initializeAudio(true);
+                    }}
+                    className="text-xs bg-processing-color text-white px-2 py-1 rounded hover:bg-processing-color/80"
+                  >
+                    使用测试模式
+                  </button>
+                </div>
+                <p className="text-xs mt-1 opacity-75">
+                  测试模式：不需要麦克风，使用模拟音频数据进行功能测试
+                </p>
               </div>
             )}
             
@@ -291,7 +307,7 @@ export default function MeetingPage() {
               <div className="permission-prompt mt-2 rounded-lg bg-processing-color/10 p-3 text-processing-color">
                 <p className="text-sm font-medium">需要麦克风权限才能开始录制</p>
                 <button 
-                  onClick={initializeAudio}
+                  onClick={() => initializeAudio()}
                   className="mt-1 text-xs underline hover:no-underline"
                 >
                   授权访问麦克风

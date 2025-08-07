@@ -14,7 +14,7 @@ export interface UseAudioRecorderReturn {
   startRecording: () => void;
   stopRecording: () => Promise<Blob | null>;
   toggleRecording: () => void;
-  initialize: () => Promise<void>;
+  initialize: (testMode?: boolean) => Promise<void>;
   destroy: () => void;
 }
 
@@ -37,7 +37,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
   /**
    * 初始化音频管理器
    */
-  const initialize = useCallback(async () => {
+  const initialize = useCallback(async (testMode = false) => {
     try {
       setError(null);
       
@@ -46,7 +46,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
       }
 
       audioManagerRef.current = new AudioManager();
-      await audioManagerRef.current.initialize();
+      await audioManagerRef.current.initialize(testMode);
       setIsInitialized(true);
       
       // 开始实时数据更新

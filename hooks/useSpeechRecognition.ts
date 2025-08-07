@@ -8,12 +8,14 @@ import {
   SpeechRecognitionResult,
   getSpeechLanguageCode 
 } from '@/lib/speech-recognition';
+import { MockSpeechGenerator } from '@/lib/mock-speech-data';
 
 export interface UseSpeechRecognitionOptions {
   continuous?: boolean;
   interimResults?: boolean;
   language?: 'zh' | 'en' | 'ms';
   autoStart?: boolean;
+  testMode?: boolean;
 }
 
 export interface UseSpeechRecognitionReturn {
@@ -40,6 +42,7 @@ export const useSpeechRecognition = (
     interimResults = true,
     language = 'en',
     autoStart = false,
+    testMode = false,
   } = options;
 
   const [isListening, setIsListening] = useState(false);
@@ -52,6 +55,7 @@ export const useSpeechRecognition = (
   const [error, setError] = useState<string | null>(null);
 
   const recognitionManagerRef = useRef<SpeechRecognitionManager | null>(null);
+  const mockGeneratorRef = useRef<MockSpeechGenerator | null>(null);
   const currentLanguageRef = useRef(language);
 
   /**
@@ -59,6 +63,30 @@ export const useSpeechRecognition = (
    */
   const initializeRecognition = useCallback(() => {
     try {
+      if (testMode) {
+        // 测试模式：初始化模拟生成器
+        const handleMockSpeech = (text: string, language: 'zh' | 'en' | 'ms', speaker: string) => {
+          setError(null);
+          setConfidence(0.9);
+          setDetectedLanguage(language);
+          
+          // 模拟最终结果
+          setFinalTranscript(prev => prev + text + ' ');
+          setTranscript(prev => prev + text + ' ');
+          setInterimTranscript('');
+        };
+
+        mockGeneratorRef.current = new MockSpeechGenerator(handleMockSpeech);
+        setIsSupported(true);
+        console.log('测试模式：模拟语音识别初始化成功');
+        
+        if (autoStart) {
+          setTimeout(() => start(), 100);
+        }
+        return;
+      }
+
+      // 正常模式：初始化真实语音识别
       if (recognitionManagerRef.current) {
         recognitionManagerRef.current.destroy();
       }
@@ -111,18 +139,30 @@ export const useSpeechRecognition = (
       setError('初始化语音识别失败');
       setIsSupported(false);
     }
-  }, [continuous, interimResults, autoStart, finalTranscript]);
+  }, [continuous, interimResults, autoStart, finalTranscript, testMode]);
 
   /**
    * 开始语音识别
    */
   const start = useCallback(() => {
-    if (!recognitionManagerRef.current?.isSupported()) {
-      setError('浏览器不支持语音识别');
+    if (isListening) {
       return;
     }
 
-    if (isListening) {
+    if (testMode) {
+      // 测试模式：启动模拟生成器
+      if (mockGeneratorRef.current) {
+        mockGeneratorRef.current.start();
+        setIsListening(true);
+        setError(null);
+        console.log('测试模式：开始模拟语音识别');
+      }
+      return;
+    }
+
+    // 正常模式
+    if (!recognitionManagerRef.current?.isSupported()) {
+      setError('浏览器不支持语音识别');
       return;
     }
 
@@ -134,13 +174,28 @@ export const useSpeechRecognition = (
       setError('启动语音识别失败');
       setIsListening(false);
     }
-  }, [isListening]);
+  }, [isListening, testMode]);
 
   /**
    * 停止语音识别
    */
   const stop = useCallback(() => {
-    if (!recognitionManagerRef.current || !isListening) {
+    if (!isListening) {
+      return;
+    }
+
+    if (testMode) {
+      // 测试模式：停止模拟生成器
+      if (mockGeneratorRef.current) {
+        mockGeneratorRef.current.stop();
+        setIsListening(false);
+        console.log('测试模式：停止模拟语音识别');
+      }
+      return;
+    }
+
+    // 正常模式
+    if (!recognitionManagerRef.current) {
       return;
     }
 
@@ -150,7 +205,7 @@ export const useSpeechRecognition = (
     } catch (err) {
       setError('停止语音识别失败');
     }
-  }, [isListening]);
+  }, [isListening, testMode]);
 
   /**
    * 中止语音识别
