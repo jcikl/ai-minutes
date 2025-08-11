@@ -117,71 +117,107 @@ export const TranscriptCard: React.FC<TranscriptCardProps> = ({
   return (
     <Card
       className={cn(
-        "transcript-card w-full border-none text-text-primary card-shadow-lg hover-scale transition-all duration-300 relative overflow-hidden",
+        "transcript-card w-full text-white shadow-2xl hover:shadow-3xl transition-all duration-500 relative overflow-hidden group hover:scale-[1.02] backdrop-blur-sm",
         {
-          "bg-gradient-to-br from-bg-secondary via-bg-secondary to-chinese-color/5 border-l-4 border-chinese-color": 
+          "bg-gradient-to-br from-red-900/20 via-slate-800/80 to-pink-900/20 border border-red-500/30": 
             segment.languageData.primaryLanguage === "zh",
-          "bg-gradient-to-br from-bg-secondary via-bg-secondary to-english-color/5 border-l-4 border-english-color": 
+          "bg-gradient-to-br from-blue-900/20 via-slate-800/80 to-indigo-900/20 border border-blue-500/30": 
             segment.languageData.primaryLanguage === "en",
-          "bg-gradient-to-br from-bg-secondary via-bg-secondary to-malay-color/5 border-l-4 border-malay-color": 
+          "bg-gradient-to-br from-emerald-900/20 via-slate-800/80 to-teal-900/20 border border-emerald-500/30": 
             segment.languageData.primaryLanguage === "ms",
         },
       )}
     >
-      {/* Background glow effect */}
-      <div className={cn("absolute inset-0 opacity-20", {
-        "bg-gradient-to-r from-transparent via-chinese-color/10 to-transparent": 
+      {/* Animated background glow effect */}
+      <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500", {
+        "bg-gradient-to-r from-transparent via-red-500/20 to-transparent animate-pulse": 
           segment.languageData.primaryLanguage === "zh",
-        "bg-gradient-to-r from-transparent via-english-color/10 to-transparent": 
+        "bg-gradient-to-r from-transparent via-blue-500/20 to-transparent animate-pulse": 
           segment.languageData.primaryLanguage === "en",
-        "bg-gradient-to-r from-transparent via-malay-color/10 to-transparent": 
+        "bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent animate-pulse": 
           segment.languageData.primaryLanguage === "ms",
+      })} />
+      
+      {/* Language accent bar */}
+      <div className={cn("absolute top-0 left-0 h-1 w-full", {
+        "bg-gradient-to-r from-red-400 to-pink-400": segment.languageData.primaryLanguage === "zh",
+        "bg-gradient-to-r from-blue-400 to-indigo-400": segment.languageData.primaryLanguage === "en",
+        "bg-gradient-to-r from-emerald-400 to-teal-400": segment.languageData.primaryLanguage === "ms",
       })} />
       
       <CardContent className="p-4">
         <div className="speaker-header mb-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 border-2 border-english-color">
-              <AvatarImage src={segment.speakerId === "speaker1" ? "/placeholder.svg?height=40&width=40&query=male%20avatar" : "/placeholder.svg?height=40&width=40&query=female%20avatar"} />
-              <AvatarFallback>
-                {segment.speakerId === "speaker1" ? "S1" : "S2"}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className={cn("h-12 w-12 border-2 ring-2 ring-offset-2 ring-offset-slate-800 transition-all duration-300", {
+                "border-red-400 ring-red-400/50": segment.languageData.primaryLanguage === "zh",
+                "border-blue-400 ring-blue-400/50": segment.languageData.primaryLanguage === "en",
+                "border-emerald-400 ring-emerald-400/50": segment.languageData.primaryLanguage === "ms",
+              })}>
+                <AvatarImage src={segment.speakerId === "speaker1" ? "/placeholder.svg?height=48&width=48&query=male%20avatar" : "/placeholder.svg?height=48&width=48&query=female%20avatar"} />
+                <AvatarFallback className={cn("text-white font-bold", {
+                  "bg-gradient-to-br from-red-500 to-pink-500": segment.languageData.primaryLanguage === "zh",
+                  "bg-gradient-to-br from-blue-500 to-indigo-500": segment.languageData.primaryLanguage === "en",
+                  "bg-gradient-to-br from-emerald-500 to-teal-500": segment.languageData.primaryLanguage === "ms",
+                })}>
+                  {segment.speakerId === "speaker1" ? "JD" : "JS"}
+                </AvatarFallback>
+              </Avatar>
+              {/* Online status indicator */}
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-slate-800 animate-pulse"></div>
+            </div>
             <div className="speaker-info">
-              <span className="speaker-name block text-base font-semibold text-text-primary">
+              <span className="speaker-name block text-lg font-bold text-white">
                 {segment.speakerId === "speaker1" ? "John Doe" : "Jane Smith"}
               </span>
-              <span className="timestamp text-xs text-text-secondary">
-                {formatTime(segment.timestamp)}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="timestamp text-sm text-gray-300 font-medium">
+                  {formatTime(segment.timestamp)}
+                </span>
+                <span className={cn("px-2 py-1 rounded-full text-xs font-semibold", {
+                  "bg-red-500/20 text-red-300": segment.languageData.primaryLanguage === "zh",
+                  "bg-blue-500/20 text-blue-300": segment.languageData.primaryLanguage === "en",
+                  "bg-emerald-500/20 text-emerald-300": segment.languageData.primaryLanguage === "ms",
+                })}>
+                  {segment.languageData.primaryLanguage === "zh" ? "CEO" : "营销总监"}
+                </span>
+              </div>
             </div>
           </div>
           <LanguageBadge languages={segment.languageData.detectedLanguages} />
         </div>
 
-        <div className="original-text mb-3">
+        <div className="original-text mb-4 p-4 rounded-xl bg-black/20 backdrop-blur-sm border border-white/10">
           {renderMultiLanguageText(segment.content, segment.languageData)}
         </div>
-        <ManglishIndicator text={segment.content} /> {/* Add ManglishIndicator */}
+        
+        {/* Enhanced ManglishIndicator */}
+        <div className="mb-4">
+          <ManglishIndicator text={segment.content} />
+        </div>
 
-        {/* 原有翻译显示 */}
+        {/* Enhanced translation display */}
         {showTranslation && segment.languageData.translations && (
-          <div className="translation-section space-y-2 rounded-md bg-bg-tertiary p-3">
+          <div className="translation-section space-y-3 rounded-xl bg-gradient-to-br from-black/30 to-black/20 backdrop-blur-sm border border-white/10 p-4 mb-4">
+            <h4 className="text-sm font-semibold text-white/80 mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              翻译结果
+            </h4>
             {Object.entries(segment.languageData.translations).map(([lang, text]) => (
-              <div key={lang} className={`translation-item text-sm text-text-secondary`}>
+              <div key={lang} className="translation-item p-3 rounded-lg bg-white/5 border border-white/10">
                 <span
                   className={cn(
-                    "lang-label mr-2 font-semibold",
+                    "lang-label inline-block px-2 py-1 rounded-md text-xs font-bold mb-2",
                     {
-                      "text-chinese-color": lang === "zh",
-                      "text-english-color": lang === "en",
-                      "text-malay-color": lang === "ms",
+                      "bg-red-500/20 text-red-300": lang === "zh",
+                      "bg-blue-500/20 text-blue-300": lang === "en",
+                      "bg-emerald-500/20 text-emerald-300": lang === "ms",
                     },
                   )}
                 >
-                  {lang.toUpperCase()}:
+                  {lang === "zh" ? "中文" : lang === "en" ? "English" : "Bahasa Melayu"}
                 </span>
-                <p className="inline">{text}</p>
+                <p className="text-sm text-gray-200 leading-relaxed">{text}</p>
               </div>
             ))}
           </div>

@@ -15,11 +15,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { WifiIcon } from 'lucide-react'
 import { CulturalEventBanner } from "@/components/cultural-event-banner"
 import { TranslationPanel } from "@/components/translation-panel"
+import { MeetingHeader } from "@/components/meeting-header"
 
 export default function MeetingPage() {
   // 首先定义状态变量
   const [currentLanguage, setCurrentLanguage] = useState<'zh' | 'en' | 'ms'>("en");
   const [isTestMode, setIsTestMode] = useState(false);
+  const [meetingStartTime, setMeetingStartTime] = useState<Date | null>(null);
+  const [meetingDuration, setMeetingDuration] = useState("00:00");
 
   // 使用音频录制钩子
   const {
@@ -213,12 +216,32 @@ export default function MeetingPage() {
       stopSpeech();
     } else {
       // 开始录制和语音识别
+      setMeetingStartTime(new Date());
       startRecording();
       if (speechSupported) {
         startSpeech();
       }
     }
   }, [isInitialized, isRecording, startRecording, stopRecording, startSpeech, stopSpeech, speechSupported])
+
+  // 会议时间跟踪
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isRecording && meetingStartTime) {
+      interval = setInterval(() => {
+        const now = new Date();
+        const diff = now.getTime() - meetingStartTime.getTime();
+        const minutes = Math.floor(diff / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        setMeetingDuration(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRecording, meetingStartTime]);
 
   const handleLanguageChange = useCallback((lang: 'zh' | 'en' | 'ms') => {
     setCurrentLanguage(lang);
@@ -244,28 +267,49 @@ export default function MeetingPage() {
   return (
     // 临时移除 AuthWrapper 以便测试
     // <AuthWrapper>
-      <div className="flex h-screen w-full flex-col bg-bg-primary p-4 text-text-primary md:p-6 lg:flex-row lg:gap-6">
-        {/* Sidebar for Participants (Tablet & Desktop) */}
-        <aside className="hidden w-full lg:block lg:w-1/4">
-          <ParticipantManager
-            participants={participants}
-            currentSpeakerId={currentSpeakerId}
-            onSpeakerChange={setCurrentSpeakerId}
-          />
-        </aside>
+    <div className="flex h-screen w-full flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        {/* Enhanced Meeting Header */}
+        <MeetingHeader
+          isRecording={isRecording}
+          participantCount={participants.length}
+          meetingDuration={meetingDuration}
+          onToggleRecording={handleToggleRecording}
+          onExport={handleExport}
+          onShare={() => console.log('Share meeting')}
+          onSettings={() => console.log('Open settings')}
+        />
 
-        {/* Main Content Area */}
-        <main className="flex flex-1 flex-col gap-4 overflow-hidden">
-          <CulturalEventBanner />
-          {/* Header / Audio Visualizer */}
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold md:text-3xl">会议转录</h1>
-              <RealtimeTranscriptSync
-                meetingId="meeting-123"
-                onTranscriptsUpdate={handleTranscriptsUpdate}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar for Participants (Tablet & Desktop) */}
+          <aside className="hidden w-80 lg:block bg-black/20 backdrop-blur-xl border-r border-white/10">
+            <div className="p-4 h-full">
+              <ParticipantManager
+                participants={participants}
+                currentSpeakerId={currentSpeakerId}
+                onSpeakerChange={setCurrentSpeakerId}
               />
             </div>
+          </aside>
+
+          {/* Main Content Area */}
+          <main className="flex flex-1 flex-col overflow-hidden">
+            {/* Cultural Event Banner */}
+            <div className="p-4 border-b border-white/10">
+              <CulturalEventBanner />
+            </div>
+            
+            {/* Audio Visualizer Section */}
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  实时音频监控
+                </h2>
+                <RealtimeTranscriptSync
+                  meetingId="meeting-123"
+                  onTranscriptsUpdate={handleTranscriptsUpdate}
+                />
+              </div>
             <AudioVisualizer
               audioData={audioData}
               isRecording={isRecording}
@@ -275,43 +319,60 @@ export default function MeetingPage() {
               backgroundNoise={audioMetrics.backgroundNoise}
             />
             
-            {/* 音频错误提示 */}
+            {/* 美化的音频错误提示 */}
             {audioError && (
-              <div className="audio-error mt-2 rounded-lg bg-recording-color/10 p-3 text-recording-color">
-                <p className="text-sm font-medium">音频错误: {audioError}</p>
-                <div className="mt-2 flex gap-2">
-                  <button 
-                    onClick={() => initializeAudio(false)}
-                    className="text-xs underline hover:no-underline"
-                  >
-                    重新初始化
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setIsTestMode(true);
-                      initializeAudio(true);
-                    }}
-                    className="text-xs bg-processing-color text-white px-2 py-1 rounded hover:bg-processing-color/80"
-                  >
-                    使用测试模式
-                  </button>
+              <div className="audio-error mt-4 rounded-xl bg-gradient-to-r from-red-500/10 to-pink-500/10 backdrop-blur-sm border border-red-500/30 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-red-400 text-sm">⚠️</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-300 mb-3">音频系统错误: {audioError}</p>
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => initializeAudio(false)}
+                        className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-medium rounded-lg transition-colors border border-red-500/40"
+                      >
+                        重新初始化
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setIsTestMode(true);
+                          initializeAudio(true);
+                        }}
+                        className="px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white text-xs font-medium rounded-lg transition-all shadow-lg"
+                      >
+                        🧪 使用测试模式
+                      </button>
+                    </div>
+                    <p className="text-xs mt-3 text-red-300/70 bg-red-500/10 rounded-lg p-2">
+                      💡 测试模式：不需要麦克风权限，使用模拟音频数据体验完整功能
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs mt-1 opacity-75">
-                  测试模式：不需要麦克风，使用模拟音频数据进行功能测试
-                </p>
               </div>
             )}
             
-            {/* 权限提示 */}
+            {/* 美化的权限提示 */}
             {!permissionGranted && (
-              <div className="permission-prompt mt-2 rounded-lg bg-processing-color/10 p-3 text-processing-color">
-                <p className="text-sm font-medium">需要麦克风权限才能开始录制</p>
-                <button 
-                  onClick={() => initializeAudio()}
-                  className="mt-1 text-xs underline hover:no-underline"
-                >
-                  授权访问麦克风
-                </button>
+              <div className="permission-prompt mt-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 backdrop-blur-sm border border-amber-500/30 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-amber-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-amber-400 text-sm">🎤</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-300 mb-3">需要麦克风权限才能开始录制</p>
+                    <button 
+                      onClick={() => initializeAudio()}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm font-medium rounded-lg transition-all shadow-lg"
+                    >
+                      🔓 授权访问麦克风
+                    </button>
+                    <p className="text-xs mt-3 text-amber-300/70">
+                      点击上方按钮，浏览器将请求麦克风权限
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -416,25 +477,57 @@ export default function MeetingPage() {
             )}
           </div>
 
-          {/* Transcript Display Area */}
-          <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-secondary">
-            <div className="space-y-4">
-              {transcripts.length === 0 && (
-                <div className="flex h-full items-center justify-center text-text-secondary">
-                  <p>开始录音以查看转录内容...</p>
+            {/* Enhanced Transcript Display Area */}
+            <div className="flex-1 p-4 overflow-hidden">
+              <div className="h-full rounded-xl bg-black/20 backdrop-blur-sm border border-white/10">
+                <div className="p-4 border-b border-white/10">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                      转录记录
+                      {transcripts.length > 0 && (
+                        <span className="ml-2 px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded-full">
+                          {transcripts.length} 条记录
+                        </span>
+                      )}
+                    </h2>
+                    <SmartControlBar
+                      isRecording={isRecording}
+                      currentLanguage={currentLanguage}
+                      onToggleRecording={handleToggleRecording}
+                      onLanguageChange={handleLanguageChange}
+                      onToggleTranslation={handleToggleTranslation}
+                      onExport={handleExport}
+                    />
+                  </div>
                 </div>
-              )}
-              {transcripts.map((segment) => (
-                <TranscriptCard
-                  key={segment.id}
-                  segment={segment}
-                  showTranslation={showTranslations}
-                  onTranslate={handleTranslateSegment}
-                  onEdit={() => console.log("Edit:", segment.id)}
-                />
-              ))}
+                
+                <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+                  <div className="space-y-4">
+                    {transcripts.length === 0 && (
+                      <div className="flex flex-col items-center justify-center h-64 text-center">
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center mb-4">
+                          <span className="text-3xl">🎤</span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-white mb-2">准备开始转录</h3>
+                        <p className="text-gray-400 max-w-md">
+                          点击录制按钮开始会议转录，AI 将实时识别和翻译多语言内容
+                        </p>
+                      </div>
+                    )}
+                    {transcripts.map((segment) => (
+                      <TranscriptCard
+                        key={segment.id}
+                        segment={segment}
+                        showTranslation={showTranslations}
+                        onTranslate={handleTranslateSegment}
+                        onEdit={() => console.log("Edit:", segment.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
 
           {/* Footer / Control Bar */}
           <div className="mt-auto">
@@ -449,32 +542,70 @@ export default function MeetingPage() {
           </div>
         </main>
 
-        {/* Right Panel (Placeholder for future features) */}
-        <aside className="hidden w-full lg:block lg:w-1/4">
-          {selectedTranslationSegmentId ? (
-            <TranslationPanel
-              originalText={transcripts.find(s => s.id === selectedTranslationSegmentId)?.content || ""}
-              translations={transcripts.find(s => s.id === selectedTranslationSegmentId)?.languageData.translations || {}}
-              culturalNotes={transcripts.find(s => s.id === selectedTranslationSegmentId)?.languageData.culturalNotes || []}
-              onLanguageSelect={setSelectedTranslationLang}
-              selectedTranslationLang={selectedTranslationLang}
-            />
-          ) : (
-            <Card className="h-full border-none bg-bg-secondary text-text-primary shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl font-bold">附加信息</CardTitle>
-              </CardHeader>
-              <CardContent className="text-text-secondary">
-                <p>点击转录片段以查看翻译和文化注释。</p>
-                <p className="mt-2">
-                  <WifiIcon className="inline-block h-4 w-4 mr-2 text-success-color" />
-                  实时连接稳定。
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </aside>
-      </div>
+          {/* Enhanced Right Panel */}
+          <aside className="hidden w-80 lg:block bg-black/20 backdrop-blur-xl border-l border-white/10">
+            <div className="p-4 h-full">
+              {selectedTranslationSegmentId ? (
+                <TranslationPanel
+                  originalText={transcripts.find(s => s.id === selectedTranslationSegmentId)?.content || ""}
+                  translations={transcripts.find(s => s.id === selectedTranslationSegmentId)?.languageData.translations || {}}
+                  culturalNotes={transcripts.find(s => s.id === selectedTranslationSegmentId)?.languageData.culturalNotes || []}
+                  onLanguageSelect={setSelectedTranslationLang}
+                  selectedTranslationLang={selectedTranslationLang}
+                />
+              ) : (
+                <div className="h-full rounded-xl bg-gradient-to-br from-slate-800/50 to-slate-700/50 backdrop-blur-sm border border-white/10 p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-sm">📊</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-white">智能分析</h3>
+                  </div>
+                  
+                  <div className="space-y-4 text-gray-300">
+                    <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                      <p className="text-sm">点击任意转录片段查看：</p>
+                      <ul className="text-xs mt-2 space-y-1 text-gray-400">
+                        <li>• 多语言翻译结果</li>
+                        <li>• 文化背景注释</li>
+                        <li>• 语言切换分析</li>
+                      </ul>
+                    </div>
+                    
+                    {transcripts.length > 0 && (
+                      <div className="p-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+                        <h4 className="text-sm font-semibold text-blue-300 mb-2">会议统计</h4>
+                        <div className="space-y-2 text-xs">
+                          <div className="flex justify-between">
+                            <span>转录片段:</span>
+                            <span className="text-blue-300">{transcripts.length}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>参与者:</span>
+                            <span className="text-blue-300">{participants.length}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>会议时长:</span>
+                            <span className="text-blue-300">{meetingDuration}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <WifiIcon className="w-4 h-4 text-emerald-400" />
+                        <span className="text-sm font-semibold text-emerald-300">连接状态</span>
+                      </div>
+                      <p className="text-xs text-emerald-400">实时同步已激活</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+    </div>
     // </AuthWrapper>
   )
 }

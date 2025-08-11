@@ -67,51 +67,74 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
   })
 
   return (
-    <div className="audio-visualizer relative flex h-20 w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-bg-secondary to-bg-tertiary p-3 card-shadow-lg">
-      {/* Background glow effect */}
-      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-chinese-color/5 via-english-color/5 to-malay-color/5"></div>
+    <div className="audio-visualizer relative flex h-32 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/50 via-slate-700/50 to-slate-800/50 backdrop-blur-xl border border-white/10 p-6 shadow-2xl">
+      {/* Animated background patterns */}
+      <div className="absolute inset-0 rounded-2xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-purple-500/10 animate-pulse"></div>
+        {isRecording && (
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-blue-500/5 to-purple-500/5 animate-pulse"></div>
+        )}
+      </div>
       
-      <div className="waveform-canvas relative flex h-full w-full items-end justify-between gap-1 z-10">
+      {/* Audio quality indicator ring */}
+      <div className="absolute top-4 right-4 z-20">
+        <div className={cn(
+          "w-3 h-3 rounded-full transition-all duration-300",
+          audioQuality > 0.8 ? "bg-emerald-400 shadow-emerald-400/50" : 
+          audioQuality > 0.5 ? "bg-amber-400 shadow-amber-400/50" : 
+          "bg-red-400 shadow-red-400/50",
+          isRecording && "animate-pulse shadow-lg"
+        )}></div>
+      </div>
+      
+      <div className="waveform-canvas relative flex h-full w-full items-end justify-center gap-1 z-10 max-w-md">
         {waveformBars}
       </div>
 
       {/* Enhanced language indicator */}
-      <div
-        className={cn(
-          "language-indicator absolute bottom-3 right-3 rounded-full px-4 py-2 text-xs font-semibold text-white shadow-lg language-badge",
-          isRecording && "float-animation",
-          {
-            "bg-chinese-color": detectedLanguage === "zh",
-            "bg-english-color": detectedLanguage === "en", 
-            "bg-malay-color": detectedLanguage === "ms",
-            "bg-gradient-to-r from-chinese-color via-english-color to-malay-color":
-              detectedLanguage === "mixed",
-          },
-        )}
-      >
-        <div className="flex items-center gap-1">
-          {isRecording && (
-            <div className="w-2 h-2 rounded-full bg-white status-online"></div>
+      <div className="absolute bottom-4 left-4 z-20">
+        <div
+          className={cn(
+            "language-indicator rounded-xl px-3 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm border border-white/20 language-badge transition-all duration-300",
+            isRecording && "scale-105",
+            {
+              "bg-gradient-to-r from-red-500/80 to-pink-500/80": detectedLanguage === "zh",
+              "bg-gradient-to-r from-blue-500/80 to-indigo-500/80": detectedLanguage === "en", 
+              "bg-gradient-to-r from-emerald-500/80 to-teal-500/80": detectedLanguage === "ms",
+              "bg-gradient-to-r from-purple-500/80 via-pink-500/80 to-indigo-500/80":
+                detectedLanguage === "mixed",
+            },
           )}
-          {getLanguageName(detectedLanguage)}
+        >
+          <div className="flex items-center gap-2">
+            {isRecording && (
+              <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+            )}
+            <span>{getLanguageName(detectedLanguage)}</span>
+          </div>
         </div>
       </div>
 
       {/* Enhanced volume meter */}
-      <div className="volume-meter absolute left-3 top-3 h-3 w-24 rounded-full bg-bg-primary/50 backdrop-blur-sm border border-white/10">
-        <div
-          className={cn(
-            "volume-bar h-full rounded-full transition-all duration-200 shadow-sm",
-            {
-              "bg-gradient-to-r from-success-color to-success-color/80": volume < 0.8,
-              "bg-gradient-to-r from-processing-color to-processing-color/80": volume >= 0.8 && volume < 0.95,
-              "bg-gradient-to-r from-recording-color to-recording-color/80": volume >= 0.95,
-            }
-          )}
-          style={{ width: `${Math.min(100, volume * 100)}%` }}
-        />
-        <div className="absolute -top-1 -right-1 text-xs text-text-secondary font-medium">
-          {Math.round(volume * 100)}%
+      <div className="absolute top-4 left-4 z-20">
+        <div className="bg-black/30 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/20">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs text-white/80 font-medium">音量</span>
+            <span className="text-xs text-white font-bold">{Math.round(volume * 100)}%</span>
+          </div>
+          <div className="volume-meter h-2 w-20 rounded-full bg-white/20 overflow-hidden">
+            <div
+              className={cn(
+                "volume-bar h-full rounded-full transition-all duration-200",
+                {
+                  "bg-gradient-to-r from-emerald-400 to-emerald-500": volume < 0.8,
+                  "bg-gradient-to-r from-amber-400 to-amber-500": volume >= 0.8 && volume < 0.95,
+                  "bg-gradient-to-r from-red-400 to-red-500": volume >= 0.95,
+                }
+              )}
+              style={{ width: `${Math.min(100, volume * 100)}%` }}
+            />
+          </div>
         </div>
       </div>
 
